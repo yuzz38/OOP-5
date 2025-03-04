@@ -1,3 +1,5 @@
+package view;
+
 import domain.Athlete;
 import domain.Coach;
 import domain.Participant;
@@ -20,7 +22,7 @@ public class Menu {
         JFrame frame = new JFrame("Меню команды");
 
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(400, 500);
+        frame.setSize(400, 400);
         frame.setLayout(new BorderLayout());
         frame.setLocationRelativeTo(null);
         JPanel panel = new JPanel();
@@ -41,7 +43,6 @@ public class Menu {
         btnTeamActions.setBackground(Color.white);
         btnTeamActions.setBorderPainted(false);
         btnTeamActions.setForeground(new Color(30,30,30));
-        btnData.setBorder(new EmptyBorder(10, 20, 10, 20));
         btnTeamActions.setFont(new Font("DialogInput", Font.PLAIN, 16));
 
         JButton btnShowParticipants = new JButton("Показать всех участников");
@@ -92,14 +93,16 @@ public class Menu {
         btnShowParticipants.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                showParticipantsInTable();
+                showParticipantsInTable(frame);
             }
         });
         btnData.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                showDataMenu();
+
+                showDataMenu(frame);
             }
+
         });
         btnTeamActions.addActionListener(new ActionListener() {
             @Override
@@ -186,12 +189,18 @@ public class Menu {
             }
         });
     }
-    private static void showParticipantsInTable() {
+    private static void showParticipantsInTable(JFrame mainFrame) {
         JFrame participantsFrame = new JFrame("Список участников");
         participantsFrame.setSize(600, 400);
         participantsFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        mainFrame.setVisible(false);
         participantsFrame.setLocationRelativeTo(null);
-
+        participantsFrame.addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosed(java.awt.event.WindowEvent windowEvent) {
+                mainFrame.setVisible(true);
+            }
+        });
         List<Participant> participants = team.getAllParticipants();
 
         String[] columnNames = {"Имя", "Возраст", "Тип"};
@@ -206,21 +215,27 @@ public class Menu {
         JScrollPane scrollPane = new JScrollPane(table);
         participantsFrame.add(scrollPane, BorderLayout.CENTER);
 
-        // Панель для поиска
+
         JPanel searchPanel = new JPanel();
         searchPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10));
 
         JTextField searchField = new JTextField(15);
         JButton searchButton = new JButton("Поиск");
+        searchButton.setBackground(new Color(30,30,30));
+        searchButton.setForeground(Color.white);
+        searchField.setFont(new Font("DialogInput", Font.PLAIN, 16));
         searchPanel.add(searchField);
         searchPanel.add(searchButton);
 
         participantsFrame.add(searchPanel, BorderLayout.NORTH);
 
         JButton btnDeleteParticipant = new JButton("Удалить участника");
+        btnDeleteParticipant.setFont(new Font("DialogInput", Font.PLAIN, 16));
+        btnDeleteParticipant.setForeground(Color.white);
+        btnDeleteParticipant.setBackground(new Color(30,30,30));
         participantsFrame.add(btnDeleteParticipant, BorderLayout.SOUTH);
 
-        // Действие кнопки поиска
+
         searchButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -231,7 +246,7 @@ public class Menu {
                     return;
                 }
 
-                // Обновляем таблицу с участниками, удовлетворяющими поисковому запросу
+
                 tableModel.setRowCount(0); // Очистка текущей таблицы
                 for (Participant p : participants) {
                     if (p.getName().toLowerCase().contains(searchTerm)) {
@@ -268,11 +283,18 @@ public class Menu {
     }
 
 
-    private static void showDataMenu() {
+    private static void showDataMenu(JFrame mainFrame) {
         JFrame dataFrame = new JFrame("Работа с данными");
         dataFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        dataFrame.setSize(400, 300);
 
+        dataFrame.setSize(400, 200);
+        mainFrame.setVisible(false);
+        dataFrame.addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosed(java.awt.event.WindowEvent windowEvent) {
+                mainFrame.setVisible(true);
+            }
+        });
         dataFrame.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 20));
         dataFrame.setBackground(new Color(30,30,30));
         dataFrame.setLocationRelativeTo(null);
@@ -300,7 +322,7 @@ public class Menu {
 
         dataFrame.setVisible(true);
 
-        // Действия кнопок
+
         btnAddAthlete.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -405,10 +427,22 @@ public class Menu {
 
 
 
-
-
     private static void saveTeamToFile() {
-        // Запрашиваем у пользователя имя файла
+
+
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Выберите папку для сохранения");
+        fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+
+        int userSelection = fileChooser.showSaveDialog(null);
+
+        if (userSelection != JFileChooser.APPROVE_OPTION) {
+            JOptionPane.showMessageDialog(null, "Выбор папки отменен.");
+            return;
+        }
+
+
+        File directory = fileChooser.getSelectedFile();
         String fileName = JOptionPane.showInputDialog("Введите имя файла для сохранения (без расширения):");
 
         if (fileName == null || fileName.isEmpty()) {
@@ -416,8 +450,8 @@ public class Menu {
             return;
         }
 
-        // Добавляем расширение .ser
-        fileName = fileName + ".ser";
+        fileName = directory.getAbsolutePath() + File.separator + fileName + ".ser";
+
 
         try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(fileName))) {
             out.writeObject(team);
@@ -428,16 +462,22 @@ public class Menu {
     }
 
     private static void loadTeamFromFile() {
-        // Запрашиваем у пользователя имя файла
-        String fileName = JOptionPane.showInputDialog("Введите имя файла для загрузки (без расширения):");
 
-        if (fileName == null || fileName.isEmpty()) {
-            JOptionPane.showMessageDialog(null, "Имя файла не может быть пустым.");
+
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Выберите файл для загрузки");
+        fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+
+        int userSelection = fileChooser.showOpenDialog(null);
+
+        if (userSelection != JFileChooser.APPROVE_OPTION) {
+            JOptionPane.showMessageDialog(null, "Выбор файла отменен.");
             return;
         }
 
-        // Добавляем расширение .ser
-        fileName = fileName + ".ser";
+        File file = fileChooser.getSelectedFile();
+        String fileName = file.getAbsolutePath();
+
 
         try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(fileName))) {
             team = (Team) in.readObject();
@@ -446,5 +486,6 @@ public class Menu {
             JOptionPane.showMessageDialog(null, "Ошибка при загрузке: " + e.getMessage());
         }
     }
+
 
 }
